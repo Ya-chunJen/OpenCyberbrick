@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>电子墨水屏显示管理</title>
+    <!-- 增强 viewport 设置，禁止用户缩放 -->
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 0px;
+            color: white;
+            font-size: 1rem;
+
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            width: 100%;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ip-selector {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        .panel-title {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 25px;
+            width: 100%;
+        }
+
+        #target_ip {
+            padding: 12px 15px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        #target_ip option {
+            background: #1a2a6c;
+            color: white;
+        }
+
+        .command-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 25px;
+            font-family: monospace;
+            word-break: break-all;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* 添加连接状态显示 */
+        .connection-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .connected {
+            background: rgba(0, 255, 0, 0.3);
+        }
+
+        .disconnected {
+            background: rgba(255, 0, 0, 0.3);
+        }
+
+
+        .connect-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tips {
+            font-size: 12px;
+        }
+
+
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .direction-buttons {
+                width: 200px;
+                height: 200px;
+            }
+
+            .control-panel {
+                padding: 15px;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            /* max-width: 300px; */
+        }
+
+        label {
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        canvas {
+            width: 100%;
+        }
+        #input_text {
+            width: 100%;
+            height: 100px;
+            user-select: text;
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            cursor: text;
+            caret-color: black; /* 光标颜色 */
+            background-color: rgba(255, 255, 255, 0.9); /* 背景颜色提高可见性 */
+            color: black; /* 文字颜色 */
+            padding: 10px; /* 内边距 */
+            border: 1px solid #ccc; /* 边框 */
+            border-radius: 5px; /* 圆角 */
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>电子墨水屏显示管理</h1>
+        </header>
+
+        <div class="control-panel">
+            <div class="ip-selector">
+                <label for="target_ip">控制设备的IP:</label>
+                <input type="text" id="target_ip" value="192.168.4.1">
+                <p class="tips">连接成功一次后，会自动记住上一次连接成功的IP。</p>
+            </div>
+
+            <!-- 连接按钮和连接状态 -->
+            <div id="disconnected-status" class="connection-status disconnected">
+                连接设备
+            </div>
+            <div id="connected-status" class="connection-status connected" style="display: none;">
+                断开设备
+            </div>
+
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">
+                <label>从文本创作图片</label>
+            </div>
+            <div class="input-group">
+                <label for="input_text">输入内容(可换行)</label><br/>
+                <textarea type="text" class="item-text" id="input_text" placeholder="在此输入要显示的文本内容，支持多行输入..."></textarea><br/>
+                <label for="algin_left">文本距左边距，-1为居中，-2为右对齐</label><br/>
+                <input type="number" class="item-x"  value="-1" id="algin_left"><br/>
+                <label for="font-size">字体大小</label><br/>
+                <input type="number" class="item-size"  value="30" id="font_size">
+            </div>
+            <button onclick="generateImageFromItems()">生成预览</button>
+            <canvas id="sourceCanvas" width="400" height="300" style="display:none;"></canvas>
+            <canvas id="displayCanvas" width="400" height="300" style="display:none;"></canvas>  
+            <button onclick="sendBinaryAsString()">发送到设备</button>
+        
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">
+                <label>上传图片</label>
+            </div>
+            <div class="input-group">
+                <input type="file" id="imageUpload" accept="image/*" />
+                <canvas id="cropCanvas" width="400" height="300" style="display:none;"></canvas>
+                <div id="cropContainer" style="position:relative; display:none;">
+                    <img id="uploadedImage" style="max-width:100%;" />
+                    <div id="cropOverlay" style="position:absolute; border:2px dashed red; cursor:move;"></div>
+                </div>
+                <button onclick="generateImageFromCrop()">生成预览</button>
+                <canvas id="displayCanvas_crop" width="400" height="300" style="display:none;"></canvas>  
+                <button onclick="sendBinaryAsString()">发送到设备</button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="panel-title">
+                <label>配网区域</label>
+            </div>
+            <div class="wifi-container">
+                <div class="form-group">
+                    <label for="ssid">SSID:</label>
+                    <input type="text" id="ssid">
+                </div>
+                <div class="form-group">
+                    <label for="password">PSD:</label>
+                    <input type="text" id="password">
+                </div>
+                <button onclick="connectwifi()" id="connectwifi">保存并重启设备</button>
+                <button onclick="wifistatus()" id="wifistatus">获取网络信息</button>
+                <p id="network_information"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 函数：从localStorage中获取IP
+        function setDefaultIPFromlocalStorage() {
+            const ip = localStorage.getItem('ink_lastConnectedIP');
+            if (ip) {
+                document.getElementById('target_ip').value = ip;
+            }
+        }
+        // 页面加载完成后执行：设置默认IP的函数
+        window.addEventListener('DOMContentLoaded', setDefaultIPFromlocalStorage);
+
+        // 初始化WebSocket连接相关变量
+        let ws = null;
+        let isConnected = false;
+
+        // 函数：更新页面上的WebSocket连接状态
+        function updateConnectionStatus(status) {
+            const disconnectedstatusElement = document.getElementById('disconnected-status');
+            const connectedstatusElement = document.getElementById('connected-status');
+            if (status) {
+                disconnectedstatusElement.style.display = 'none';
+                connectedstatusElement.style.display = 'block';
+                // 连接成功的话，就将当前的IP保存到localStorage中
+                localStorage.setItem('ink_lastConnectedIP', document.getElementById('target_ip').value);
+            } else {
+                disconnectedstatusElement.style.display = 'block';
+                connectedstatusElement.style.display = 'none';
+            }
+        }
+
+        // 函数：连接WebSocket服务，如果已连接则断开
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                isConnected = false;
+                updateConnectionStatus(false);
+                return;
+            }
+            const ip = document.getElementById('target_ip').value;
+            if (!ip) {
+                alert('请输入IP地址');
+                return;
+            }
+            try {
+                ws = new WebSocket(`ws://${ip}:80`);
+                ws.onopen = function () {
+                    console.log('WebSocket连接已建立');
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                };
+                ws.onmessage = function (event) {
+                    //console.log('收到消息:', event.data);
+                    handleMessage(event.data);
+                };
+                ws.onclose = function () {
+                    console.log('WebSocket连接已关闭');
+                    ws = null;
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                };
+                ws.onerror = function (error) {
+                    console.error('WebSocket错误:', error);
+                    ws = null;
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                    alert('连接失败');
+                };
+            } catch (e) {
+                console.error('WebSocket连接失败:', e);
+                alert('连接失败: ' + e.message);
+            }
+        }
+
+        // 函数：根据消息类型显示在不同位置
+        function handleMessage(message) {
+            console.log('收到消息:', message);
+            message_json = JSON.parse(message);
+            // 判断是否为WiFi状态信息
+            cmd_type = message_json.cmd_type;
+            if (cmd_type == "wifistatus") {
+                ap_ip = message_json.ap_ip;
+                sta_ip = message_json.sta_ip;
+                document.getElementById('network_information').innerHTML = "STA IP: " + sta_ip;
+            }
+        }
+
+        // 函数：通过WebSocket发送消息命令
+        function sendWebSocketMessage(command) {
+            if (!isConnected || !ws) {
+                console.log('WebSocket未连接');
+                return false;
+            }
+            try {
+                ws.send(command);
+                return true;
+            } catch (e) {
+                console.error('发送消息失败:', e);
+                return false;
+            }
+        }
+
+        // 初始化要发送的命令
+        let currentState = {
+            command: '{"cmd_type":"control","cmd_detail":"stop|stop|-2|-2|-2|-2|"}'
+        };
+        // let currentCommandDisplay = document.getElementById('current-command');
+
+        // 函数：将命令发送给服务器
+        function handleAction(command) {
+            str_command = JSON.stringify(command);
+            if (currentState.command !== str_command) {
+                currentState.command = str_command;
+                // 更新显示的指令
+                // currentCommandDisplay.textContent = JSON.stringify(command)                
+                // 通过WebSocket发送命令
+
+                if (!sendWebSocketMessage(str_command)) {
+                    console.log('WebSocket发送失败');
+                }
+            }
+        }
+
+        // 函数：输入wifi信息并连接
+        function connectwifi() {
+            var ssid = document.getElementById('ssid').value;
+            var password = document.getElementById('password').value;
+            wifi_connect_command = { "cmd_type": "wifi", "ssid": ssid, "password": password }
+            handleAction(wifi_connect_command)
+        }
+        // 函数：刷新wifi信息
+        function wifistatus() {
+            wifistatus_conmand = { "cmd_type": "wifistatus" }
+            handleAction(wifistatus_conmand)
+            // 将返回的信息显示在页面上
+        }
+        // 绑定点击事件
+        document.getElementById('disconnected-status').addEventListener('click', connectWebSocket);
+        document.getElementById('connected-status').addEventListener('click', connectWebSocket);
+
+        // 图片上传和裁剪相关功能
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = document.getElementById('uploadedImage');
+                img.src = event.target.result;
+                
+                img.onload = function() {
+                    const cropContainer = document.getElementById('cropContainer');
+                    cropContainer.style.display = 'block';
+                    
+                    const overlay = document.getElementById('cropOverlay');
+                    overlay.style.width = '100px';
+                    overlay.style.height = '75px';
+                    overlay.style.left = '0px';
+                    overlay.style.top = '0px';
+                    
+                    // 添加拖拽功能
+                    let isDragging = false;
+                    let isResizing = false;
+                    let startX, startY, startLeft, startTop, startWidth, startHeight;
+                    
+                    // 添加调整大小的手柄
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.style.position = 'absolute';
+                    resizeHandle.style.width = '10px';
+                    resizeHandle.style.height = '10px';
+                    resizeHandle.style.background = 'red';
+                    resizeHandle.style.right = '-5px';
+                    resizeHandle.style.bottom = '-5px';
+                    resizeHandle.style.cursor = 'se-resize';
+                    overlay.appendChild(resizeHandle);
+                    
+                    // 鼠标事件
+                    overlay.addEventListener('mousedown', function(e) {
+                        if (e.target === resizeHandle) {
+                            isResizing = true;
+                        } else {
+                            isDragging = true;
+                        }
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startLeft = parseInt(overlay.style.left) || 0;
+                        startTop = parseInt(overlay.style.top) || 0;
+                        startWidth = parseInt(overlay.style.width) || 400;
+                        startHeight = parseInt(overlay.style.height) || 300;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    resizeHandle.addEventListener('mousedown', function(e) {
+                        isResizing = true;
+                        startX = e.clientX;
+                        startY = e.clientY;
+                        startLeft = parseInt(overlay.style.left) || 0;
+                        startTop = parseInt(overlay.style.top) || 0;
+                        startWidth = parseInt(overlay.style.width) || 400;
+                        startHeight = parseInt(overlay.style.height) || 300;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    document.addEventListener('mousemove', function(e) {
+                        if (!isDragging && !isResizing) return;
+                        
+                        const dx = e.clientX - startX;
+                        const dy = e.clientY - startY;
+                        
+                        if (isDragging) {
+                            let newLeft = startLeft + dx;
+                            let newTop = startTop + dy;
+                            
+                            // 限制移动范围
+                            const containerRect = img.getBoundingClientRect();
+                            const overlayRect = overlay.getBoundingClientRect();
+                            
+                            newLeft = Math.max(0, Math.min(newLeft, containerRect.width - overlayRect.width));
+                            newTop = Math.max(0, Math.min(newTop, containerRect.height - overlayRect.height));
+                            
+                            overlay.style.left = newLeft + 'px';
+                            overlay.style.top = newTop + 'px';
+                        }
+                        
+                        if (isResizing) {
+                            let newWidth = startWidth + dx;
+                            let newHeight = startHeight + dy;
+                            
+                            // 设置最小尺寸
+                            newWidth = Math.max(50, newWidth);
+                            newHeight = Math.max(50, newHeight);
+                            
+                            // 保持4:3比例
+                            const ratio = 400 / 300;
+                            if (newWidth / newHeight > ratio) {
+                                newWidth = newHeight * ratio;
+                            } else {
+                                newHeight = newWidth / ratio;
+                            }
+                            
+                            // 限制最大尺寸不超过图片
+                            const containerRect = img.getBoundingClientRect();
+                            newWidth = Math.min(newWidth, containerRect.width - startLeft);
+                            newHeight = Math.min(newHeight, containerRect.height - startTop);
+                            
+                            overlay.style.width = newWidth + 'px';
+                            overlay.style.height = newHeight + 'px';
+                        }
+                    });
+                    
+                    document.addEventListener('mouseup', function() {
+                        isDragging = false;
+                        isResizing = false;
+                    });
+                    
+                    // 触摸事件支持
+                    overlay.addEventListener('touchstart', function(e) {
+                        const touch = e.touches[0];
+                        if (e.target === resizeHandle) {
+                            isResizing = true;
+                        } else {
+                            isDragging = true;
+                        }
+                        startX = touch.clientX;
+                        startY = touch.clientY;
+                        startLeft = parseInt(overlay.style.left) || 0;
+                        startTop = parseInt(overlay.style.top) || 0;
+                        startWidth = parseInt(overlay.style.width) || 400;
+                        startHeight = parseInt(overlay.style.height) || 300;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    resizeHandle.addEventListener('touchstart', function(e) {
+                        const touch = e.touches[0];
+                        isResizing = true;
+                        startX = touch.clientX;
+                        startY = touch.clientY;
+                        startLeft = parseInt(overlay.style.left) || 0;
+                        startTop = parseInt(overlay.style.top) || 0;
+                        startWidth = parseInt(overlay.style.width) || 400;
+                        startHeight = parseInt(overlay.style.height) || 300;
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    document.addEventListener('touchmove', function(e) {
+                        if (!isDragging && !isResizing) return;
+                        
+                        const touch = e.touches[0];
+                        const dx = touch.clientX - startX;
+                        const dy = touch.clientY - startY;
+                        
+                        if (isDragging) {
+                            let newLeft = startLeft + dx;
+                            let newTop = startTop + dy;
+                            
+                            // 限制移动范围
+                            const containerRect = img.getBoundingClientRect();
+                            const overlayRect = overlay.getBoundingClientRect();
+                            
+                            newLeft = Math.max(0, Math.min(newLeft, containerRect.width - overlayRect.width));
+                            newTop = Math.max(0, Math.min(newTop, containerRect.height - overlayRect.height));
+                            
+                            overlay.style.left = newLeft + 'px';
+                            overlay.style.top = newTop + 'px';
+                        }
+                        
+                        if (isResizing) {
+                            let newWidth = startWidth + dx;
+                            let newHeight = startHeight + dy;
+                            
+                            // 设置最小尺寸
+                            newWidth = Math.max(50, newWidth);
+                            newHeight = Math.max(50, newHeight);
+                            
+                            // 保持4:3比例
+                            const ratio = 400 / 300;
+                            if (newWidth / newHeight > ratio) {
+                                newWidth = newHeight * ratio;
+                            } else {
+                                newHeight = newWidth / ratio;
+                            }
+                            
+                            // 限制最大尺寸不超过图片
+                            const containerRect = img.getBoundingClientRect();
+                            newWidth = Math.min(newWidth, containerRect.width - startLeft);
+                            newHeight = Math.min(newHeight, containerRect.height - startTop);
+                            
+                            overlay.style.width = newWidth + 'px';
+                            overlay.style.height = newHeight + 'px';
+                        }
+                        e.preventDefault();
+                    });
+                    
+                    document.addEventListener('touchend', function() {
+                        isDragging = false;
+                        isResizing = false;
+                    });
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 从裁剪区域生成图像
+        function generateImageFromCrop() {
+            const img = document.getElementById('uploadedImage');
+            const overlay = document.getElementById('cropOverlay');
+            const canvas = document.getElementById('cropCanvas');
+            const ctx = canvas.getContext('2d');
+            const displayCanvas = document.getElementById('displayCanvas_crop');
+            const displayCtx = displayCanvas.getContext('2d');
+            
+            if (!img.src) {
+                alert('请先选择图片');
+                return;
+            }
+            
+            // 获取裁剪区域的位置和尺寸
+            const scaleX = img.naturalWidth / img.width;
+            const scaleY = img.naturalHeight / img.height;
+            
+            const cropX = (parseInt(overlay.style.left) || 0)*scaleX ;
+            const cropY = (parseInt(overlay.style.top) || 0)*scaleY;
+            const cropWidth =  (parseInt(overlay.style.width) || 0)*scaleX;
+            const cropHeight = (parseInt(overlay.style.height) || 0)*scaleY;
+            console.log(cropX, cropY, cropWidth, cropHeight);
+            
+            // 在画布上绘制裁剪的图像
+            canvas.width = 400;
+            canvas.height = 300;
+            ctx.drawImage(img, cropX, cropY, cropWidth, cropHeight, 0, 0, 400, 300);
+            
+            // 显示图像
+            displayCanvas.style.display = 'block';
+            displayCtx.drawImage(canvas, 0, 0);
+            
+            // 转换为灰度并二值化
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // 转换为灰度图
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                // 灰度计算: 0.299 * R + 0.587 * G + 0.114 * B
+                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+            
+            // 应用阈值转换
+            const threshold = 128;
+            for (let i = 0; i < data.length; i += 4) {
+                const value = data[i] > threshold ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = value;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            displayCtx.drawImage(canvas, 0, 0);
+            
+            // 将图像的像素数据转换为嵌套列表
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const dataArr = [];
+            
+            for (let y = 0; y < canvas.height; y++) {
+                const innerArr = [];
+                dataArr.push(innerArr);
+                for (let x = 0; x < canvas.width; x++) {
+                    const pixelIndex = (y * canvas.width + x) * 4;
+                    const pixelValue = pixels.data[pixelIndex] === 255 ? 1 : 0;
+                    innerArr.push(pixelValue);
+                }
+            }
+            
+            // 转换为字节数组
+            const byteArray = new Uint8Array(Math.ceil(canvas.width * canvas.height / 8));
+            let byteIndex = 0;
+            
+            for (let row of dataArr) {
+                for (let i = 0; i < row.length; i += 8) {
+                    let byte = 0;
+                    for (let bit = 0; bit < 8; bit++) {
+                        if (i + bit < row.length) {
+                            byte |= (row[i + bit] << (7 - bit));
+                        }
+                    }
+                    byteArray[byteIndex++] = byte;
+                }
+            }
+                 
+            // 保存字节数组到全局变量，供下载使用
+            window.generatedByteArray = byteArray;
+        }
+
+        function calculateCustomLength(s) {
+            let length = 0;
+            const zhBiaodian = ["，","。","：","？","（","）","【","】","「","」","；","！","、","《","》"];
+            for (let char of s) {
+                // 判断字符是否为汉字或中文标点符号
+                if ((char >= '\u4e00' && char <= '\u9fff') || zhBiaodian.includes(char)) {
+                    length += 1;  // 汉字算作两个单位
+                } else {
+                    length += 0.5;  // 其他字符算作一个单位
+                }
+            }
+            return length;
+        }
+
+
+        // 从文本项生成JSON数据
+        function generateJSONFromItems() {
+            const items = document.querySelectorAll('.text-item');
+            const textData = [];
+            
+            items.forEach(item => {
+                const text = item.querySelector('.item-text').value;
+                const x = parseInt(item.querySelector('.item-x').value) || 0;
+                const y = parseInt(item.querySelector('.item-y').value) || 0;
+                const size = parseInt(item.querySelector('.item-size').value) || 20;
+                
+                if (text) {
+                    textData.push({
+                        "text": text,
+                        "position": [x, y],
+                        "size": size
+                    });
+                }
+            });
+            
+            return textData;
+        }
+
+        function generateImage() {
+            try {
+                const textData = JSON.parse(document.getElementById('textData').value);
+                generateImageFromData(textData);
+            } catch (error) {
+                alert(`生成图像时出错：${error}`);
+            }
+        }
+
+        // 新增函数：根据文本项生成图像
+        function generateImageFromItems() {
+            try {
+                const inputText = document.getElementById('input_text').value;
+                const fontSize = parseInt(document.getElementById('font_size').value) || 30;
+                let alignLeft = parseInt(document.getElementById('algin_left').value);
+                if (isNaN(alignLeft)) {
+                    alignLeft = -1;
+                }
+                
+                if (!inputText.trim()) {
+                    alert('请输入文本内容'); 
+                    return;
+                }
+                
+                const lines = inputText.split('\n');
+                const textData = [];
+                let currentY = fontSize;
+                
+                lines.forEach(line => {
+                    if (line.trim()) {
+                        textData.push({
+                            "text": line,
+                            "position": [alignLeft, currentY],
+                            "size": fontSize
+                        });
+                        currentY += fontSize + 5; // 行间距
+                    }
+                });
+                
+                generateImageFromData(textData);
+            } catch (error) {
+                alert(`生成图像时出错：${error}`);
+            }
+        }
+
+        // 重构图像生成逻辑
+        function generateImageFromData(textData) {
+            const canvas = document.getElementById('sourceCanvas');
+            const ctx = canvas.getContext('2d');
+            const displayCanvas = document.getElementById('displayCanvas');
+            const displayCtx = displayCanvas.getContext('2d');
+            
+            // 清空画布
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            console.log(textData);
+            
+            // 绘制文本
+            textData.forEach(item => {
+                const { text, position, size } = item;
+                let [curCursorX, curCursorY] = position;
+                const textWidth = calculateCustomLength(text) * size;
+                
+                if (curCursorX === -1) {
+                    // 居中对齐
+                    curCursorX = (400 - textWidth) / 2;
+                } else if (curCursorX === -2) {
+                    // 右对齐
+                    curCursorX = 400 - textWidth;
+                }
+                
+                ctx.font = `${size}px AdobeHeitiStd, 微软雅黑, sans-serif`;
+                ctx.fillStyle = 'black';
+                ctx.fillText(text, curCursorX, curCursorY);
+            });
+            
+            // 显示图像
+            displayCanvas.style.display = 'block';
+            displayCtx.drawImage(canvas, 0, 0);
+            
+            // 转换为灰度并二值化
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // 转换为灰度图
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                // 灰度计算: 0.299 * R + 0.587 * G + 0.114 * B
+                const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                data[i] = data[i + 1] = data[i + 2] = gray;
+            }
+            
+            // 应用阈值转换
+            const threshold = 128;
+            for (let i = 0; i < data.length; i += 4) {
+                const value = data[i] > threshold ? 255 : 0;
+                data[i] = data[i + 1] = data[i + 2] = value;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            displayCtx.drawImage(canvas, 0, 0);
+            
+            // 将图像的像素数据转换为嵌套列表
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const dataArr = [];
+            
+            for (let y = 0; y < canvas.height; y++) {
+                const innerArr = [];
+                dataArr.push(innerArr);
+                for (let x = 0; x < canvas.width; x++) {
+                    const pixelIndex = (y * canvas.width + x) * 4;
+                    const pixelValue = pixels.data[pixelIndex] === 255 ? 1 : 0;
+                    innerArr.push(pixelValue);
+                }
+            }
+            
+            // 转换为字节数组
+            const byteArray = new Uint8Array(Math.ceil(canvas.width * canvas.height / 8));
+            let byteIndex = 0;
+            
+            for (let row of dataArr) {
+                for (let i = 0; i < row.length; i += 8) {
+                    let byte = 0;
+                    for (let bit = 0; bit < 8; bit++) {
+                        if (i + bit < row.length) {
+                            byte |= (row[i + bit] << (7 - bit));
+                        }
+                    }
+                    byteArray[byteIndex++] = byte;
+                }
+            }
+                 
+            // 保存字节数组到全局变量，供下载使用
+            window.generatedByteArray = byteArray;
+        }
+             
+        // 新增函数：将二进制数据以Base64字符串形式发送到服务器
+        function sendBinaryAsString() {
+            if (!window.generatedByteArray) {
+                alert('请先生成图像');
+                return;
+            }
+            
+            if (!isConnected || !ws) {
+                alert('请先连接设备');
+                return;
+            }
+            
+            try {
+                // 将二进制数据转换为Base64字符串
+                const base64Data = btoa(String.fromCharCode.apply(null, window.generatedByteArray));
+                
+                // 创建包含Base64数据的命令对象
+                const command = {
+                    "cmd_type": "binary_data_string",
+                    "data": base64Data
+                };
+                
+                // 发送Base64编码的数据
+                if (!sendWebSocketMessage(JSON.stringify(command))) {
+                    alert('发送数据失败');
+                    return;
+                }
+                
+                // alert('二进制数据已Base64编码并发送到设备');
+            } catch (error) {
+                alert('发送失败: ' + error.message);
+            }
+        }
+               
+    </script>
+</body>
+
+</html>
