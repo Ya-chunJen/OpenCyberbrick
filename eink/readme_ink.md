@@ -65,9 +65,9 @@ img
 ## 四、系统架构介绍
 针对没有阅读过上一篇文章的读者，我再来介绍一下整个项目的软硬件构成，并且公开本项目的开源地址。
 #### 项目开源
-github地址：
+github地址：[https://github.com/Ya-chunJen/OpenCyberbrick/blob/main/eink/readme_ink.md](https://github.com/Ya-chunJen/OpenCyberbrick/blob/main/eink/readme_ink.md)
 
-gitee地址：
+gitee地址：[https://gitee.com/renyajun1990/OpenCyberbrick/blob/main/eink/readme_ink.md](https://gitee.com/renyajun1990/OpenCyberbrick/blob/main/eink/readme_ink.md)
 #### 硬件结构
 硬件部分又四部分构成，分别是：
 - esp32主控：整个系统的大脑，接收数据、处理数据、发送显示数据。这里我使用的是esp32s3，内存大一些才能创建400x300的缓存区。
