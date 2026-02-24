@@ -49,7 +49,9 @@ def handle_http_request(request_json):
         print("处理GET请求")
         if request_json["path"] == "/":
             response = 'HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nAccess-Control-Allow-Origin: *\r\n\r\n'
-            return response
+            with open("ink_web_index.html", "r", encoding='utf-8') as f:
+                content = f.read()
+            return response + content
         elif request_json["path"] == "/wifistatus":
             response = 'HTTP/1.1 200 OK\r\nAccess-Control-Allow-Origin: *\r\n\r\n' + f"WIFI网络IP地址: {wlan_sta.ifconfig()[0]}"
             return response

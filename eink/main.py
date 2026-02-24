@@ -25,6 +25,6 @@ def start_8am_task():
         time.sleep(60*10)  # 休眠10分钟
         
 if __name__ == "__main__":
-    #start_webserver()
-    start_8am_task()
+    start_webserver()
+    # start_8am_task()
 
